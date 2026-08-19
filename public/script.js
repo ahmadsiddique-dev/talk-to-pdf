@@ -15,7 +15,7 @@ uploader.addEventListener("change", (e) => {
         button.style.display = "block";
     }
 
-    uploadedFiles = [...e.target.files]
+    uploadedFiles = [...uploadedFiles, ...e.target.files]
 
     uploadFiles(uploadedFiles)
 });
@@ -29,6 +29,12 @@ function uploadFiles(files) {
 
     const filesContainer = document.querySelector(".files-status")
 
+    if (files.length === 0) {
+        button.style.display = "none";
+        uploadedFiles = [];
+        return;
+    }
+
     if (files.length > 0) {
         filesContainer.innerHTML = files.map((file) => {
             return `
@@ -38,7 +44,7 @@ function uploadFiles(files) {
                     ${file.name}
                 </p>
 
-                <button class="w-7 h-7 hover:bg-red-200 p-1 cursor-pointer rounded-full shrink-0">
+                <button class="w-7 h-7 hover:bg-red-200 p-1 cursor-pointer rounded-full shrink-0" id="delete-file">
                     <img src="/cross.svg" alt="Delete Icon" class="delete-icon">
                 </button>
             </div>
@@ -46,7 +52,19 @@ function uploadFiles(files) {
         </div>
             `
         }).join("");
+
+        const deleteButtons = document.querySelectorAll("#delete-file");
+
+        deleteButtons.forEach((button, index) => {
+            button.addEventListener("click", () => {
+                uploadedFiles.splice(index, 1);
+                uploadFiles(uploadedFiles);
+            });
+        });
+
     }
+
+
 }
 
 
