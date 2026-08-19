@@ -1,23 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
     <h1 class="main-heading">Talk to PDF</h1>
     <div class="uploader" id="uploader-div">
-        <input class="upload-content" id="uploader" type="file" accept=".pdf, .txt, .docx" hidden />
-            <img src="/upload.svg" alt="Upload Icon" class="upload-icon">
+        <input class="upload-content" id="uploader" type="file" accept=".pdf, .txt, .docx" hidden multiple />
+        <img src="/upload.svg" alt="Upload Icon" class="upload-icon">
     </div>
     <div class="submit-div">
-        <button id="submit-btn">
-            Submit
+        <button class="button">
+            <div class="blob1"></div>
+            <div class="blob2"></div>
+            <div class="inner">Submit</div>
         </button>
+    </div>
+
+    <div class="files-status">
+        
     </div>
 
     <script src="script.js"></script>
 </body>
+
 </html>

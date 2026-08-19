@@ -1,3 +1,6 @@
+* {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
+}
 .main-heading {
     color: #333;
     font-size: 4em;
@@ -40,7 +43,7 @@
     cursor: pointer;
     transition: background-color 0.3s ease;
     border: 2px dashed #e11d48;
-    
+
 }
 
 #uploader {
@@ -64,4 +67,118 @@
     justify-content: center;
     align-items: center;
     margin-top: 20px;
+}
+
+.button {
+    cursor: pointer;
+    font-size: 1.4rem;
+    border-radius: 16px;
+    display: none;
+    border: none;
+    padding: 2px;
+    background: radial-gradient(circle 80px at 80% -10%, #ffffff, #181b1b);
+    position: relative;
+}
+
+.button::after {
+    content: "";
+    position: absolute;
+    width: 65%;
+    height: 60%;
+    border-radius: 120px;
+    top: 0;
+    right: 0;
+    box-shadow: 0 0 20px #ffffff38;
+    z-index: -1;
+}
+
+.blob1 {
+    position: absolute;
+    width: 70px;
+    height: 100%;
+    border-radius: 16px;
+    bottom: 0;
+    left: 0;
+    background: radial-gradient(circle 60px at 0% 100%,
+            #3fe9ff,
+            #0000ff80,
+            transparent);
+    box-shadow: -10px 10px 30px #0051ff2d;
+}
+
+.inner {
+    padding: 14px 25px;
+    border-radius: 14px;
+    color: #fff;
+    z-index: 3;
+    position: relative;
+    background: radial-gradient(circle 80px at 80% -50%, #777777, #0f1111);
+}
+
+.inner::before {
+    content: "";
+    width: 100%;
+    height: 100%;
+    left: 0;
+    top: 0;
+    border-radius: 14px;
+    background: radial-gradient(circle 60px at 0% 100%,
+            #00e1ff1a,
+            #0000ff11,
+            transparent);
+    position: absolute;
+}
+
+.files-status {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 20px;
+
+}
+
+.file-status {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #ff6347;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.file-name {
+    font-size: 0.85rem;
+    margin-right: 6px;
+    max-width: 320px;
+    min-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-height: 1.3em;
+    overflow: hidden;
+}
+
+.file-size {
+    margin-top: 14px;
+    font-size: 0.75rem;
+    color: #555;
+}
+
+.delete-btn {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 15px;
+    max-width: 30px;
+}
+
+.file-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-right: 20px;
 }
