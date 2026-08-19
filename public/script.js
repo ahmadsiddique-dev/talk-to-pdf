@@ -3,68 +3,61 @@ const uploader = document.getElementById("uploader");
 const uploaderDiv = document.getElementById("uploader-div");
 const button = document.querySelector(".button");
 const fileList = document.querySelector(".files-status");
+const deleteButton = document.querySelector(".delete-file")
 
 uploaderDiv.addEventListener("click", () => {
     uploader.click();
 });
 
-let uploadedFiles = [];
-
+let files = []
 uploader.addEventListener("change", (e) => {
-    if (e.target.files.length > 0) {
-        button.style.display = "block";
-    }
-
-    uploadedFiles = [...uploadedFiles, ...e.target.files]
-
-    uploadFiles(uploadedFiles)
+    files = [...files, ...Array.from(e.target.files)];
+    renderFiles();
 });
 
-let formData = new FormData();
 
-function uploadFiles(files) {
-    files.forEach((file) => {
-        formData.append("files", file);
-    });
-
-    const filesContainer = document.querySelector(".files-status")
-
-    if (files.length === 0) {
-        button.style.display = "none";
-        uploadedFiles = [];
-        return;
-    }
-
-    if (files.length > 0) {
-        filesContainer.innerHTML = files.map((file) => {
-            return `
+function renderFiles() {
+    fileList.innerHTML = files.map((file, index) => {
+        return `
             <div class="border border-gray-300 p-4 rounded-lg w-md max-w-md">
-            <div class="flex flex-row items-center justify-center">
-                <p class="truncate flex-1">
-                    ${file.name}
+                <div class="flex flex-row items-center justify-center">
+                    <p class="truncate flex-1">
+                        ${file.name}
+                    </p>
+
+                    <button 
+                        type="button"
+                        class="delete-file w-7 h-7 hover:bg-red-200 p-1 cursor-pointer rounded-full shrink-0"
+                        data-index="${index}"
+                    >
+                        <img src="/cross.svg" alt="Delete Icon" class="delete-icon">
+                    </button>
+                </div>
+
+                <p class="text-sm text-gray-800 font-bold">
+                    ${file.size / 1024 > 0.5
+                ? (file.size / 1024).toFixed(2) + " KB"
+                : (file.size / 1024 / 1024).toFixed(2) + " MB"
+            }
                 </p>
-
-                <button class="w-7 h-7 hover:bg-red-200 p-1 cursor-pointer rounded-full shrink-0" id="delete-file">
-                    <img src="/cross.svg" alt="Delete Icon" class="delete-icon">
-                </button>
             </div>
-            <p class="text-sm text-gray-800 font-bold">${(file.size / 1024 > 0.5 ? file.size / 1024 : file.size / 1024 / 1024).toFixed(2)} ${file.size / 1024 > 0.5 ? "KB" : "MB"}</p>
-        </div>
-            `
-        }).join("");
-
-        const deleteButtons = document.querySelectorAll("#delete-file");
-
-        deleteButtons.forEach((button, index) => {
-            button.addEventListener("click", () => {
-                uploadedFiles.splice(index, 1);
-                uploadFiles(uploadedFiles);
-            });
-        });
-
-    }
-
-
+        `;
+    }).join("");
 }
+
+
+fileList.addEventListener("click", (e) => {
+    const deleteButton = e.target.closest(".delete-file");
+
+    if (!deleteButton) return;
+
+    const index = Number(deleteButton.dataset.index);
+
+    files.splice(index, 1);
+
+    renderFiles();
+})
+
+
 
 
