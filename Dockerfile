@@ -6,6 +6,8 @@ COPY package*.json ./
 
 RUN npm ci
 
+RUN mkdir -p /app/uploads
+
 COPY . .
 
 EXPOSE 3000

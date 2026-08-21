@@ -8,8 +8,13 @@ services:
       - PORT=3000
       - REDIS_HOST=redis
       - REDIS_PORT=6379
+      - GOOGLE_API_KEY=AIzaSyD8zeyvtzTJOb7SxpUI5TKDB67HDXCc2N8
+      - MONGODB_ATLAS_URI=mongodb+srv://saif:saif321@cluster0.wcnmcel.mongodb.net/
+      - MONGODB_ATLAS_DB_NAME=talk-to-pdf
+      - MONGODB_ATLAS_COLLECTION_NAME=pdfs
     volumes:
       - ./src:/app/src
+      - ./uploads:/app/uploads
     depends_on:
       - redis
 
@@ -22,6 +27,7 @@ services:
       - REDIS_PORT=6379
     volumes:
       - ./src:/app/src
+      - ./uploads:/app/uploads
     depends_on:
       - redis
 
