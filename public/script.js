@@ -17,6 +17,10 @@ uploader.addEventListener("change", (e) => {
 
 
 function renderFiles() {
+    if (files.length > 0) {
+        button.style.display = "block";
+    }
+
     fileList.innerHTML = files.map((file, index) => {
         return `
             <div class="border border-gray-300 p-4 rounded-lg w-md max-w-md">
@@ -57,6 +61,28 @@ fileList.addEventListener("click", (e) => {
 
     renderFiles();
 })
+
+const submitBtn = document.querySelector("#submit-btn");
+submitBtn.addEventListener("click", async () => {
+    const formData = new FormData();
+    files.forEach((file) => {
+        formData.append("files", file);
+    });
+
+    const response = await fetch("/upload", {
+        method: "POST",
+        body: formData
+    });
+
+    if (response.ok) {
+        const data = await response.json();
+        console.log(data);
+        alert("Files uploaded successfully!");
+    } else {
+        alert("Failed to upload files.");
+    }
+})
+
 
 
 

@@ -75,7 +75,6 @@
     border-radius: 16px;
     display: none;
     border: none;
-    padding: 2px;
     background: radial-gradient(circle 80px at 80% -10%, #ffffff, #181b1b);
     position: relative;
 }
@@ -84,7 +83,7 @@
     content: "";
     position: absolute;
     width: 65%;
-    height: 60%;
+    height: 40%;
     border-radius: 120px;
     top: 0;
     right: 0;
