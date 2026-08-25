@@ -1,12 +1,13 @@
 import { Worker } from 'bullmq'
-import fs from 'node:fs'
 import { Redis } from 'ioredis'
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters'
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
-import { PDFParse } from 'pdf-parse'
+import { parsePDF } from './services/parser.service.js'
 import { MongoDBAtlasVectorSearch } from "@langchain/mongodb"
-import { MongoClient } from "mongodb"
 import 'dotenv/config'
+import { collection } from './lib/Vector_DB_Client.js'
+import { promiseHooks } from 'node:v8';
+import { resolve } from 'node:dns';
 
 export const connection = new Redis({
     maxRetriesPerRequest: null,
@@ -14,76 +15,67 @@ export const connection = new Redis({
     port: 6379,
 })
 
-if (!process.env['OPENAI_API_KEY']) {
-    console.error("OPENAI_API_KEY is not defined in the environment variables.");
-    throw new Error("OPENAI_API_KEY is not defined in the environment variables.");
-}
+const imp = [
+    !process.env['OPENAI_API_KEY'],
+    !process.env['MONGODB_ATLAS_URI'],
+    !process.env['MONGODB_ATLAS_DB_NAME'],
+    !process.env['MONGODB_ATLAS_COLLECTION_NAME']
+]
 
-if (!process.env['MONGODB_ATLAS_URI']) {
-    console.error("MONGODB_ATLAS_URI is not defined in the environment variables.");
-    throw new Error("MONGODB_ATLAS_URI is not defined in the environment variables.");
-}
-
-if (!process.env['MONGODB_ATLAS_DB_NAME']) {
-    console.error("MONGODB_ATLAS_DB_NAME is not defined in the environment variables.");
-    throw new Error("MONGODB_ATLAS_DB_NAME is not defined in the environment variables.");
-}
-
-if (!process.env['MONGODB_ATLAS_COLLECTION_NAME']) {
-    console.error("MONGODB_ATLAS_COLLECTION_NAME is not defined in the environment variables.");
-    throw new Error("MONGODB_ATLAS_COLLECTION_NAME is not defined in the environment variables.");
-}
-const embeddings = new GoogleGenerativeAIEmbeddings({
+export const embeddings = new GoogleGenerativeAIEmbeddings({
     model: "gemini-embedding-2"
 });
 
 const worker = new Worker('pdfQueue', async (job) => {
-    const path = job.data.filePath;
-    console.log(`Processing file: ${path} with batchId: ${job.data.batchId}`);
-    const textSplitter = new RecursiveCharacterTextSplitter({
-        chunkSize: 1000,
-        chunkOverlap: 200,
-    });
-    console.log(`Reading file content from: ${path}`);
-    const pdfBuffer = fs.readFileSync(path, 'utf-8');
-    const parser = new PDFParse({data: pdfBuffer});
-    const pdfData = await parser.getText();
-    const fileContent = pdfData.text;
-    const chunks = await textSplitter.splitText(fileContent);
-    console.log(`File content split into ${chunks.length} chunks.`);
-    const client = new MongoClient(process.env['MONGODB_ATLAS_URI']!);
-    const collection = client
-        .db(process.env['MONGODB_ATLAS_DB_NAME'])
-        .collection(process.env['MONGODB_ATLAS_COLLECTION_NAME'] as string);
-    console.log(`Connected to MongoDB Atlas, using database: ${process.env['MONGODB_ATLAS_DB_NAME']} and collection: ${process.env['MONGODB_ATLAS_COLLECTION_NAME']}`);
-    const vectorStore = new MongoDBAtlasVectorSearch(embeddings, {
-        collection,
-        indexName: "vector_index",
-        textKey: "text",
-        embeddingKey: "embedding",
-    });
-    console.log("******************************************")
-    console.log(`Adding ${chunks.length} chunks to the vector store for file: ${job.data.fileName}`);
-    console.log("******************************************")
+
     try {
-        await vectorStore.addDocuments(chunks.map((chunk) => {
-            return {
-                pageContent: chunk,
-                metadata: {
-                    batchId: job.data.batchId,
-                    fileName: job.data.fileName,
-                    chunkIndex: chunks.indexOf(chunk),
-                }
-            }
-        }));
-    } catch (error) {
-        if (error instanceof Error) {
-            console.error(`Error adding documents to vector store: ${error.message}`);
-        } else {
-            console.error(`Unexpected error: ${error}`);
+        // DOn't worry just checking before it fails because of .env
+        if (imp.some((val) => val)) {
+            throw new Error("Missing required environment variables.");
         }
-    }
-    console.log(`Added ${chunks.length} chunks to the vector store for file: ${job.data.fileName}`);
+
+        // Extracting path
+        const path = job.data.filePath;
+
+        // Making text splitter instance
+        const textSplitter = new RecursiveCharacterTextSplitter({
+            chunkSize: 1000,
+            chunkOverlap: 200,
+        });
+
+        await new Promise((resolve) => setTimeout(resolve,  3000))
+
+        // Making chunks from our text and this text is comming from /services/parser.service.ts so check that out
+        const chunks = await textSplitter.splitText(await parsePDF(path));
+
+        console.log("JOB: ", job.data.fileName, "Done");
+        // Vector store for later enabling indexing in vector search and further more
+        // const vectorStore = new MongoDBAtlasVectorSearch(embeddings, {
+        //     // This client is comming from /lib/verctor_DB_Client.ts 
+        //     collection,
+        //     indexName: "vector_index",
+        //     textKey: "text",
+        //     embeddingKey: "embedding",
+        // });
+
+        // // Adding docs to vector store now
+        // await vectorStore.addDocuments(chunks.map((chunk) => {
+        //     return {
+        //         pageContent: chunk,
+        //         metadata: {
+        //             batchId: job.data.batchId,
+        //             fileName: job.data.fileName,
+        //             chunkIndex: chunks.indexOf(chunk),
+        //         }
+        //     }
+        // }));
+
+    } catch (error) {
+        if (error === 'Invalid Root reference.') {
+            console.log("Pleas upload text containing files.")
+        }
+        console.log(error instanceof Error ? error.message : "Something went wrong.")
+    }                                                                                             
 
 }, {
     connection: connection, limiter: {
@@ -91,6 +83,4 @@ const worker = new Worker('pdfQueue', async (job) => {
         duration: 10000
     }
 })
-
-
 

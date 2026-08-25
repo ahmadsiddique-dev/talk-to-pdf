@@ -21,4 +21,4 @@ app.post("/upload", upload.array("files", 10), (req, res) => uploadFiles(req, re
 
 app.listen(Number(PORT) ,"0.0.0.0", () => {
     console.log(`Server is up and running on port ${PORT}`);
-})
+});
