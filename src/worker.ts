@@ -28,6 +28,7 @@ const worker = new Worker('pdfQueue', async (job) => {
             throw new Error("Missing required environment variables.");
         }
 
+        await new Promise((resolve) => setTimeout(resolve, 150));
         await job.updateProgress(30)
         // Extracting path
         const path = job.data.filePath;
@@ -38,10 +39,11 @@ const worker = new Worker('pdfQueue', async (job) => {
             chunkOverlap: 200,
         });
 
+        await new Promise((resolve) => setTimeout(resolve, 150));
         await job.updateProgress(60)
-        await new Promise((resolve) => setTimeout(resolve,  3000))
 
-        await job.updateProgress(100)
+        await new Promise((resolve) => setTimeout(resolve,  300))
+        await job.updateProgress(90)
         // Making chunks from our text and this text is comming from /services/parser.service.ts so check that out
         const chunks = await textSplitter.splitText(await parsePDF(path));
 

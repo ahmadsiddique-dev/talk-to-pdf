@@ -3,7 +3,7 @@ import path from "path";
 import {upload} from './services/multer.service.js'
 import { uploadFiles } from './controller/upload.controller.js'
 import { pdfQueue } from './services/bullmq.service.js'
-import { QueueEvents } from 'bullmq'
+import { QueueEvents, type JobProgress } from 'bullmq'
 import { connection } from './lib/redis_connection.js'
 
 const app = express();
@@ -37,18 +37,15 @@ app.get("/job/:jobId", async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    res.write(`data: ${JSON.stringify({ progress: job.progress, state: await job.getState() })}\n\n`);
-
-    const onProgress = (event: any) => {
-        console.log("PRogres", JSON.stringify(event))
-            res.write(`data: ${JSON.stringify({ progress: JSON.stringify(event), state: 'active' })}\n\n`);
-        
+    const onProgress = ({jobId, data}: {jobId: string, data: JobProgress}) => {
+        if (jobId === job.id) {
+            res.write(`data: ${JSON.stringify({ progress: data, state: 'active', fileName: job.data.fileName })}\n\n`); 
+        }
     };
 
     const onCompleted = ({ jobId: id }: { jobId: string }) => {
-        console.log("Completed: ", jobId)
         if (id === jobId) {
-            res.write(`data: ${JSON.stringify({ progress: 100, state: 'completed' })}\n\n`);
+            res.write(`data: ${JSON.stringify({ progress: 100, state: 'completed', "fileName": job.data.fileName })}\n\n`);
             cleanup();
             res.end();
         }

@@ -85,36 +85,41 @@ uploader.addEventListener("change", (e) => {
     renderFiles();
 });
 
-
 function renderFiles() {
     if (files.length > 0) {
         button.style.display = "block";
     }
 
     fileList.innerHTML = files.map((file, index) => {
+        let percentage = 0
         return `
             <div class="border border-gray-300 p-4 rounded-lg w-md max-w-md">
-                <div class="flex flex-row items-center justify-center">
-                    <p class="truncate flex-1">
-                        ${file.name}
-                    </p>
+            <div class="w-full justify-start items-center flex -mt-4 rounded-full  bg-green-200">
+                <p 
+                class="rounded-full h-2 w-[${percentage}%] bg-green-500 pt-0 progress-bar"
+                data-file="${file.name}"
+                ></p>
+            </div>
+            <div class="flex flex-row items-center justify-center">
 
-                    <button 
-                        type="button"
-                        class="delete-file w-7 h-7 hover:bg-red-200 p-1 cursor-pointer rounded-full shrink-0"
-                        data-index="${index}"
-                    >
-                        <img src="/cross.svg" alt="Delete Icon" class="delete-icon">
-                    </button>
-                </div>
+                <p class="truncate flex-1">
+                    ${file.name}
+                </p>
 
-                <p class="text-sm text-gray-800 font-bold">
+                <button type="button" class="delete-file w-7 h-7 hover:bg-red-200 p-1 cursor-pointer rounded-full shrink-0"
+                    data-index="${index}">
+                    <img src="/cross.svg" alt="Delete Icon" class="delete-icon">
+                </button>
+            </div>
+        
+            <p class="text-sm text-gray-800 font-bold">
                     ${file.size / 1024 > 0.5
                 ? (file.size / 1024).toFixed(2) + " KB"
                 : (file.size / 1024 / 1024).toFixed(2) + " MB"
             }
-                </p>
-            </div>
+            </p>
+        </div>
+
         `;
     }).join("");
 }
@@ -139,7 +144,7 @@ submitBtn.addEventListener("click", async () => {
         formData.append("files", file);
     });
 
-    const response = await fetch("/upload", {
+    const response = await fetch("/upload", { 
         method: "POST",
         body: formData
     });
@@ -147,18 +152,35 @@ submitBtn.addEventListener("click", async () => {
     if (response.ok) {
         const data = await response.json();
         const ids = data.ids;
-        console.log("ids: ", ids)
         toast.show('success', "Added", "Files has been added for processing!")
 
         for (const item of ids) {
-            const response = await fetch(`job/${item.id}`)
-            console.log("ID: ", item.name)
+            const eventSource = new EventSource(`/job/${item.id}`, {
+                withCredentials: true
+            })
+
+            eventSource.onmessage = (e) => {
+                const data = JSON.parse(e.data)
+                const fileName = data.fileName;
+
+                files.map((file) => {
+                    if (file.name === fileName) {
+                        console.log("hello dear", data.progress)
+                        const element = fileList.querySelectorAll(`.progress-bar[data-file="${file.name}"]`)
+                        element[0].style.width = `${data.progress}%`
+                    }
+                })
+                if (data.state === 'completed') {
+                    eventSource.close();
+                }
+            }
+
+            eventSource.onerror = (err) => {
+                toast.show("error", "Server Error", `${err instanceof Error ? err.message : "Something went wrong!"}`)
+                eventSource.close();
+            }
         }
     } else {
         toast.show("error", "Failed", "Failed to process files!")
     }
 })
-
-// USAGE
-// const toast = new Toast();
-// toast.show('success', 'Hello!', 'Mission complete.');
