@@ -14,6 +14,7 @@ services:
       - MONGODB_ATLAS_COLLECTION_NAME=pdfs
     volumes:
       - ./src:/app/src
+      - ./public:/app/public
       - ./uploads:/app/uploads
     depends_on:
       - redis

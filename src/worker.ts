@@ -1,19 +1,13 @@
 import { Worker } from 'bullmq'
-import { Redis } from 'ioredis'
 import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters'
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
 import { parsePDF } from './services/parser.service.js'
 import { MongoDBAtlasVectorSearch } from "@langchain/mongodb"
 import 'dotenv/config'
 import { collection } from './lib/Vector_DB_Client.js'
-import { promiseHooks } from 'node:v8';
-import { resolve } from 'node:dns';
+import { connection } from './lib/redis_connection.js'
 
-export const connection = new Redis({
-    maxRetriesPerRequest: null,
-    host: 'redis',
-    port: 6379,
-})
+
 
 const imp = [
     !process.env['OPENAI_API_KEY'],
@@ -34,6 +28,7 @@ const worker = new Worker('pdfQueue', async (job) => {
             throw new Error("Missing required environment variables.");
         }
 
+        await job.updateProgress(30)
         // Extracting path
         const path = job.data.filePath;
 
@@ -43,8 +38,10 @@ const worker = new Worker('pdfQueue', async (job) => {
             chunkOverlap: 200,
         });
 
+        await job.updateProgress(60)
         await new Promise((resolve) => setTimeout(resolve,  3000))
 
+        await job.updateProgress(100)
         // Making chunks from our text and this text is comming from /services/parser.service.ts so check that out
         const chunks = await textSplitter.splitText(await parsePDF(path));
 
