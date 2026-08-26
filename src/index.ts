@@ -30,7 +30,8 @@ app.get("/job/:jobId", async (req, res) => {
     const job = await pdfQueue.getJob(jobId);
 
     if (!job) {
-        return res.status(404).json({ message: "Job not found" });
+        res.status(404).json({ message: "Job not found" });
+        return;
     }
 
     res.setHeader('Content-Type', 'text/event-stream');
@@ -61,6 +62,10 @@ app.get("/job/:jobId", async (req, res) => {
 
     req.on('close', cleanup);
 });
+
+app.get('/chat', (_, res) => {
+    res.sendFile(path.join(__dirname, "public", "chat.html"))
+})
 app.listen(Number(PORT) ,"0.0.0.0", () => {
     console.log(`Server is up and running on port ${PORT}`);
 });

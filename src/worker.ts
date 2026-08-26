@@ -28,9 +28,6 @@ const worker = new Worker('pdfQueue', async (job) => {
             throw new Error("Missing required environment variables.");
         }
 
-        await new Promise((resolve) => setTimeout(resolve, 150));
-        await job.updateProgress(30)
-        // Extracting path
         const path = job.data.filePath;
 
         // Making text splitter instance
@@ -39,41 +36,42 @@ const worker = new Worker('pdfQueue', async (job) => {
             chunkOverlap: 200,
         });
 
-        await new Promise((resolve) => setTimeout(resolve, 150));
-        await job.updateProgress(60)
-
-        await new Promise((resolve) => setTimeout(resolve,  300))
-        await job.updateProgress(90)
         // Making chunks from our text and this text is comming from /services/parser.service.ts so check that out
         const chunks = await textSplitter.splitText(await parsePDF(path));
 
-        console.log("JOB: ", job.data.fileName, "Done");
+        await job.updateProgress(30)
+
         // Vector store for later enabling indexing in vector search and further more
-        // const vectorStore = new MongoDBAtlasVectorSearch(embeddings, {
-        //     // This client is comming from /lib/verctor_DB_Client.ts 
-        //     collection,
-        //     indexName: "vector_index",
-        //     textKey: "text",
-        //     embeddingKey: "embedding",
-        // });
+        const vectorStore = new MongoDBAtlasVectorSearch(embeddings, {
+            // This client is comming from /lib/verctor_DB_Client.ts 
+            collection,
+            indexName: "vector_index",
+            textKey: "text",
+            embeddingKey: "embedding",
+        });
 
-        // // Adding docs to vector store now
-        // await vectorStore.addDocuments(chunks.map((chunk) => {
-        //     return {
-        //         pageContent: chunk,
-        //         metadata: {
-        //             batchId: job.data.batchId,
-        //             fileName: job.data.fileName,
-        //             chunkIndex: chunks.indexOf(chunk),
-        //         }
-        //     }
-        // }));
+        await job.updateProgress(60)
 
+        // Adding docs to vector store now
+        await vectorStore.addDocuments(chunks.map((chunk) => {
+            return {
+                pageContent: chunk,
+                metadata: {
+                    batchId: job.data.batchId,
+                    fileName: job.data.fileName,
+                    chunkIndex: chunks.indexOf(chunk),
+                }
+            }
+        }));
+
+        await job.updateProgress(90)
+
+        return 'Documents processed successfully.'
     } catch (error) {
         if (error === 'Invalid Root reference.') {
             console.log("Pleas upload text containing files.")
         }
-        console.log(error instanceof Error ? error.message : "Something went wrong.")
+        return error instanceof Error ? error.message : "Something went wrong."
     }                                                                                             
 
 }, {
@@ -83,3 +81,6 @@ const worker = new Worker('pdfQueue', async (job) => {
     }
 })
 
+worker.on("completed", (e) => {
+    console.log(e.data)
+})

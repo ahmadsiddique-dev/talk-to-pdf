@@ -144,7 +144,7 @@ submitBtn.addEventListener("click", async () => {
         formData.append("files", file);
     });
 
-    const response = await fetch("/upload", { 
+    const response = await fetch("/upload", {
         method: "POST",
         body: formData
     });
@@ -170,11 +170,21 @@ submitBtn.addEventListener("click", async () => {
                         element[0].style.width = `${data.progress}%`
                     }
                 })
+
                 if (data.state === 'completed') {
                     eventSource.close();
+
+                    files = files.filter(f => f.name !== fileName);
+
+                    renderFiles();
+
+                    if (files.length === 0) {
+                        button.style.display = "none";
+                        const chatButton = document.getElementById('chat-button');
+                        chatButton.style.display = 'flex'
+                    }
                 }
             }
-
             eventSource.onerror = (err) => {
                 toast.show("error", "Server Error", `${err instanceof Error ? err.message : "Something went wrong!"}`)
                 eventSource.close();
@@ -184,3 +194,5 @@ submitBtn.addEventListener("click", async () => {
         toast.show("error", "Failed", "Failed to process files!")
     }
 })
+
+
