@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express'
-import Anthropic, { } from '@anthropic-ai/sdk'
+import Anthropic from '@anthropic-ai/sdk'
 import 'dotenv/config'
 import crypto from 'node:crypto'
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
@@ -15,7 +15,7 @@ export async function getData(search_string: string) {
     }
 
     return 'Hackclub is a non-profit organization which provides a plattform to teens to get togather build projects and enhance their skill with fun and friends. It\' really really cool community around the world.'
-}  
+}
 
 export const tools: Anthropic.Tool[] = [
     {
@@ -52,10 +52,10 @@ export async function Ask(req: Request, res: Response) {
     const data = await req.body;
 
     if (!data.prompt) {
-        res.send({message: "Something went wrong!", success: false})
+        res.send({ message: "Something went wrong!", success: false })
     }
 
-    messages.push({role: "user", content: data.prompt})
+    messages.push({ role: "user", content: data.prompt })
 
     let responseText = '';
 
@@ -76,7 +76,7 @@ export async function Ask(req: Request, res: Response) {
     // rag | ToolSetName: undefined
     // rag | caller { type: 'direct' }
     // rag | Input { search_string: 'Hack Club information overview' }
-    // rag | type tool_use
+    // rag | type tool_uses
 
     stream.on('contentBlock', async (e) => {
         if (e.type === 'tool_use') {
@@ -85,25 +85,36 @@ export async function Ask(req: Request, res: Response) {
             if (e.name === 'get_data_tool') {
                 const response = await getData("hello dear how are you")
 
-                messages.push({role: "assistant", content: response})
+                // From here to
                 const finalStream = await client.messages.stream({
                     model: "claude-haiku-4-5",
                     max_tokens: 1000,
-                    messages: messages,
+                    messages: [{
+                        role: 'system',
+                        content: response
+                    }],
                     tools: tools
                 })
 
                 finalStream.on("text", (text) => {
                     responseText += text
                 })
+
+                await stream.finalMessage();
+
+                messages.push({ role: "assistant", content: responseText });
+
+                res.send({ message: messages, success: true })
+
+                // this place i just want somehow this message or the result of tool goes to the main stream
             }
         }
-        
-        
+
+
     })
 
     await stream.finalMessage();
-    
+
     messages.push({ role: "assistant", content: responseText });
 
     res.send({ message: messages, success: true })
