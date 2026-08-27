@@ -3,7 +3,8 @@ import Anthropic from '@anthropic-ai/sdk'
 import 'dotenv/config'
 import crypto from 'node:crypto'
 import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
-import { tool } from '@langchain/core/tools';
+import * as z from "zod"; 
+import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod.js';
 
 export const embeddings = new GoogleGenerativeAIEmbeddings({
     model: "gemini-embedding-2"
@@ -17,24 +18,39 @@ export async function getData(search_string: string) {
     return 'Hackclub is a non-profit organization which provides a plattform to teens to get togather build projects and enhance their skill with fun and friends. It\' really really cool community around the world.'
 }
 
-export const tools: Anthropic.Tool[] = [
-    {
-        name: "get_data_tool",
-        description: "Search the embedding store for relevant information from the user's documents. Use this when you need factual information that may exist in the user's stored documents.",
-        input_schema: {
-            type: "object",
-            properties: {
-                search_string: {
-                    type: "string",
-                    description: "A concise semantic search query for the embedding store."
-                },
-            },
-            required: ['search_string'],
-            additionalProperties: false
-        },
-        strict: true,
+export const fetchInfoTool = betaZodTool({
+    name: "get_data",
+    description: "",
+    inputSchema: z.object({
+        search_string: z.string().describe("")
+    }),
+    run: async (input): Promise<string> => {
+        console.log("Input: ", input) {
+            
+        }
     }
-]
+})
+
+// export const tools: Anthropic.Tool[] = [
+//     {
+//         name: "get_data_tool",
+//         description: "Search the embedding store for relevant information from the user's documents. Use this when you need factual information that may exist in the user's stored documents.",
+//         input_schema: {
+//             type: "object",
+//             properties: {
+//                 search_string: {
+//                     type: "string",
+//                     description: "A concise semantic search query for the embedding store."
+//                 },
+//             },
+//             required: ['search_string'],
+//             additionalProperties: false
+//         },
+//         strict: true,
+//     }
+// ]
+
+
 
 const client = new Anthropic();
 const chatId = crypto.randomUUID();
