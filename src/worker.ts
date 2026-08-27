@@ -10,7 +10,6 @@ import { connection } from './lib/redis_connection.js'
 
 
 const imp = [
-    !process.env['OPENAI_API_KEY'],
     !process.env['MONGODB_ATLAS_URI'],
     !process.env['MONGODB_ATLAS_DB_NAME'],
     !process.env['MONGODB_ATLAS_COLLECTION_NAME']
@@ -18,6 +17,14 @@ const imp = [
 
 export const embeddings = new GoogleGenerativeAIEmbeddings({
     model: "gemini-embedding-2"
+});
+
+export const vectorStore = new MongoDBAtlasVectorSearch(embeddings, {
+    // This client is comming from /lib/verctor_DB_Client.ts 
+    collection,
+    indexName: "vector_index",
+    textKey: "text",
+    embeddingKey: "embedding",
 });
 
 const worker = new Worker('pdfQueue', async (job) => {
@@ -36,19 +43,14 @@ const worker = new Worker('pdfQueue', async (job) => {
             chunkOverlap: 200,
         });
 
+        await job.updateProgress(30)
         // Making chunks from our text and this text is comming from /services/parser.service.ts so check that out
         const chunks = await textSplitter.splitText(await parsePDF(path));
 
-        await job.updateProgress(30)
+        
 
         // Vector store for later enabling indexing in vector search and further more
-        const vectorStore = new MongoDBAtlasVectorSearch(embeddings, {
-            // This client is comming from /lib/verctor_DB_Client.ts 
-            collection,
-            indexName: "vector_index",
-            textKey: "text",
-            embeddingKey: "embedding",
-        });
+        
 
         await job.updateProgress(60)
 
