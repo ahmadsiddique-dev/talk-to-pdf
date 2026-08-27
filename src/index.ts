@@ -5,6 +5,7 @@ import { uploadFiles } from './controller/upload.controller.js'
 import { pdfQueue } from './services/bullmq.service.js'
 import { QueueEvents, type JobProgress } from 'bullmq'
 import { connection } from './lib/redis_connection.js'
+import { Ask } from "./controller/ask.controller.js";
 
 const app = express();
 const PORT = process.env['PORT'] || 3000;
@@ -12,15 +13,12 @@ const queueEvent = new QueueEvents('pdfQueue', {
     connection: connection
 })
 
-const __filename = import.meta.url;
-const __dirname = path.dirname(__filename);
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
 app.get("/", (_, res) => {
-    res.sendFile(path.join(__dirname, "public", "index.html"));
+    res.sendFile(path.resolve('public/index.html'));
 });
 
 app.post("/upload", upload.array("files", 10), (req, res) => uploadFiles(req, res));
@@ -63,9 +61,12 @@ app.get("/job/:jobId", async (req, res) => {
     req.on('close', cleanup);
 });
 
+app.post('/ask', (req, res) => Ask(req, res))
+
 app.get('/chat', (_, res) => {
-    res.sendFile(path.join(__dirname, "public", "chat.html"))
+    res.sendFile(path.resolve('public/chat.html'))
 })
+
 app.listen(Number(PORT) ,"0.0.0.0", () => {
     console.log(`Server is up and running on port ${PORT}`);
 });
