@@ -1,8 +1,27 @@
-
 const textArea = document.querySelector("#ask");
+const chatArea = document.querySelector("#chat-interface");
+const visibleArea = document.querySelector("#visible-area");
+const submitBtn = document.querySelector('#enter-button')
+
+
+let chatMessages = [];
+
+function scrollToBottom() {
+    chatArea.scrollTop = chatArea.scrollHeight;
+}
 
 async function submitFun() {
     const prompt = textArea.value
+
+    const img = submitBtn.firstElementChild
+
+    img.setAttribute("src", '/loader.svg')
+    textArea.disabled = true
+    submitBtn.disabled = true
+    img.classList.add('animate-spin')
+
+    textArea.value = ''
+
     const response = await fetch('/ask', {
         method: 'POST',
         headers: {
@@ -25,7 +44,22 @@ async function submitFun() {
 
     const finalResponse = await response.json();
 
-    console.log("Response: ", finalResponse.message)
+    img.setAttribute("src", "/send.svg");
+    textArea.disabled = false;
+    textArea.disabled = false;
+    img.classList.remove('animate-spin')
+
+    chatMessages = finalResponse.message
+
+    chatArea.innerHTML = chatMessages.map((m) => {
+        return `
+            <div class="w-90 p-2! ${m.role === 'assistant' ? 'bg-rose-400': "bg-rose-700 text-white"} rounded-xl ${m.role === 'user' && 'self-end'} shrink-0">
+                ${m.content}
+            </div>
+        `
+    })
+
+    scrollToBottom();
 }
 
 textArea.addEventListener('keydown', (e) => {
@@ -38,8 +72,6 @@ textArea.addEventListener('keydown', (e) => {
         
     }
 });
-
-const submitBtn = document.querySelector('#enter-button')
 
 submitBtn.addEventListener('click', () => {
     submitFun();
