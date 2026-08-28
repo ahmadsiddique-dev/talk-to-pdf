@@ -6,6 +6,7 @@ import { MongoDBAtlasVectorSearch } from "@langchain/mongodb"
 import 'dotenv/config'
 import { collection } from './lib/Vector_DB_Client.js'
 import { connection } from './lib/redis_connection.js'
+import fs from 'node:fs'
 
 const imp = [
     !process.env['MONGODB_ATLAS_URI'],
@@ -41,6 +42,7 @@ const worker = new Worker('pdfQueue', async (job) => {
             chunkOverlap: 200,
         });
 
+        await new Promise((resolve) => setTimeout(resolve, 200)) // Just to make loader proper
         await job.updateProgress(30)
         // Making chunks from our text and this text is comming from /services/parser.service.ts so check that out
         const chunks = await textSplitter.splitText(await parsePDF(path));
@@ -49,7 +51,7 @@ const worker = new Worker('pdfQueue', async (job) => {
 
         // Vector store for later enabling indexing in vector search and further more
         
-
+        await new Promise((resolve) => setTimeout(resolve, 200)) // Just to make loader proper
         await job.updateProgress(60)
 
         // Adding docs to vector store now
@@ -65,6 +67,9 @@ const worker = new Worker('pdfQueue', async (job) => {
         }));
 
         await job.updateProgress(90)
+
+        // We should unlink the pdf file now.
+        fs.unlinkSync(path);
 
         return 'Documents processed successfully.'
     } catch (error) {

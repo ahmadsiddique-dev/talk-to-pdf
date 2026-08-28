@@ -31,7 +31,7 @@ export const fetchInfoTool = betaZodTool({
             return "No relevant information found in stored documents.";
         }
 
-        return searchResult.map(doc => doc.pageContent).join("\n\n---\n\n");
+        return searchResult.map(doc => doc.pageContent + "\nFileName: " + doc.metadata['fileName']).join("\n\n---\n\n");
     }
 })
 
@@ -69,6 +69,10 @@ export async function Ask(req: Request, res: Response) {
 
     for await (const chunk of (await stream).content) {
         if (chunk.type === 'text') {
+            console.log(chunk.text)
+            if (chunk.citations) {
+                console.log("Citation: ", chunk.citations)
+            }
             responseText += chunk.text;
         }
     }
