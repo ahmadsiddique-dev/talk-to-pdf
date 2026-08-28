@@ -69,10 +69,6 @@ export async function Ask(req: Request, res: Response) {
 
     for await (const chunk of (await stream).content) {
         if (chunk.type === 'text') {
-            console.log(chunk.text)
-            if (chunk.citations) {
-                console.log("Citation: ", chunk.citations)
-            }
             responseText += chunk.text;
         }
     }

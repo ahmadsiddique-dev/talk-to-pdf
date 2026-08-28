@@ -1,7 +1,8 @@
 const textArea = document.querySelector("#ask");
 const chatArea = document.querySelector("#chat-interface");
 const visibleArea = document.querySelector("#visible-area");
-const submitBtn = document.querySelector('#enter-button')
+const submitBtn = document.querySelector('#enter-button');
+const customLoader = document.querySelector("#custom-loader")
 
 
 let chatMessages = [];
@@ -13,6 +14,9 @@ function scrollToBottom() {
 async function submitFun() {
     const prompt = textArea.value
 
+    customLoader.innerHTML = `
+    <span class="loader"></span>
+    `
     const img = submitBtn.firstElementChild
 
     img.setAttribute("src", '/loader.svg')
@@ -31,25 +35,16 @@ async function submitFun() {
         
     })
 
-    // const reader = response.body.getReader();
-
-    // const decoder = new TextDecoder();
-
-    // while (true) {
-    //     const { value, done } = await reader.read();
-    //     if (done) break; 
-
-    //     const textChunk = decoder.decode(value, { stream: true });
-    // }
-
     const finalResponse = await response.json();
 
     img.setAttribute("src", "/send.svg");
     textArea.disabled = false;
     textArea.disabled = false;
+    customLoader.toggleAttribute('hidden', true)
     img.classList.remove('animate-spin')
+    customLoader.innerHTML = ""
 
-    chatMessages = finalResponse.message
+    chatMessages = finalResponse.message;
 
     console.log("chatmessages", chatMessages)
     chatArea.innerHTML = chatMessages.map((m) => {
