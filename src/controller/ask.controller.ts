@@ -2,13 +2,9 @@ import type { Request, Response } from 'express'
 import Anthropic from '@anthropic-ai/sdk'
 import 'dotenv/config'
 import crypto from 'node:crypto'
-import { GoogleGenerativeAIEmbeddings } from "@langchain/google-genai";
-import * as z from "zod"; 
+import * as z from "zod";
 import { betaZodTool } from '@anthropic-ai/sdk/helpers/beta/zod.js';
-
-export const embeddings = new GoogleGenerativeAIEmbeddings({
-    model: "gemini-embedding-2"
-});
+import { vectorStore } from '../worker.js';
 
 export async function getData(search_string: string) {
     if (!search_string) {
@@ -20,37 +16,24 @@ export async function getData(search_string: string) {
 
 export const fetchInfoTool = betaZodTool({
     name: "get_data",
-    description: "",
+    description: "Search the embedding store for relevant information from the user's documents. Use this when you need factual information that may exist in the user's stored documents.",
     inputSchema: z.object({
-        search_string: z.string().describe("")
+        search_string: z.string().describe("A concise semantic search query for the embedding store.")
     }),
-    run: async (input): Promise<string> => {
-        console.log("Input: ", input) {
-            
+    run: async (input): Promise<any> => {
+        let searchResult;
+        try {
+            searchResult = await vectorStore.similaritySearch(input.search_string, 4)
+        } catch (error) {
+            console.log(error instanceof Error ? error.message : "Something went wrong")
         }
+        if (!searchResult || searchResult.length === 0) {
+            return "No relevant information found in stored documents.";
+        }
+
+        return searchResult.map(doc => doc.pageContent).join("\n\n---\n\n");
     }
 })
-
-// export const tools: Anthropic.Tool[] = [
-//     {
-//         name: "get_data_tool",
-//         description: "Search the embedding store for relevant information from the user's documents. Use this when you need factual information that may exist in the user's stored documents.",
-//         input_schema: {
-//             type: "object",
-//             properties: {
-//                 search_string: {
-//                     type: "string",
-//                     description: "A concise semantic search query for the embedding store."
-//                 },
-//             },
-//             required: ['search_string'],
-//             additionalProperties: false
-//         },
-//         strict: true,
-//     }
-// ]
-
-
 
 const client = new Anthropic();
 const chatId = crypto.randomUUID();
@@ -75,61 +58,20 @@ export async function Ask(req: Request, res: Response) {
 
     let responseText = '';
 
-    const stream = await client.messages.stream({
+    const stream = client.beta.messages.toolRunner({
         model: "claude-haiku-4-5",
-        max_tokens: 1000,
-        messages: messages,
-        tools: tools
-    })
+        max_tokens: 4000,
+        system: "You are a chatbot which gives results to the user based on his upload documents. You fetch the documents from database using tool and give answer and if you don't know answer just ask: Sorry, I don't know ",
+        messages: [{ role: "user", content: data.prompt }],
+        tools: [fetchInfoTool],
+        stream: true
+    });
 
-    stream.on("text", (text) => {
-        responseText += text;
-        console.log(text);
-    })
-
-    // id: toolu_01DUUBAqsSUYksBk9fedhjeZ
-    // rag | Name: get_data_tool
-    // rag | ToolSetName: undefined
-    // rag | caller { type: 'direct' }
-    // rag | Input { search_string: 'Hack Club information overview' }
-    // rag | type tool_uses
-
-    stream.on('contentBlock', async (e) => {
-        if (e.type === 'tool_use') {
-            console.log("id: ", e.id, "\nName: ", e.name, "\nToolSetName: ", e.toolset_name, "\ncaller", e.caller, "\nInput", e.input, '\ntype', e.type)
-
-            if (e.name === 'get_data_tool') {
-                const response = await getData("hello dear how are you")
-
-                // From here to
-                const finalStream = await client.messages.stream({
-                    model: "claude-haiku-4-5",
-                    max_tokens: 1000,
-                    messages: [{
-                        role: 'system',
-                        content: response
-                    }],
-                    tools: tools
-                })
-
-                finalStream.on("text", (text) => {
-                    responseText += text
-                })
-
-                await stream.finalMessage();
-
-                messages.push({ role: "assistant", content: responseText });
-
-                res.send({ message: messages, success: true })
-
-                // this place i just want somehow this message or the result of tool goes to the main stream
-            }
+    for await (const chunk of (await stream).content) {
+        if (chunk.type === 'text') {
+            responseText += chunk.text;
         }
-
-
-    })
-
-    await stream.finalMessage();
+    }
 
     messages.push({ role: "assistant", content: responseText });
 
