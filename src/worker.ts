@@ -7,8 +7,6 @@ import 'dotenv/config'
 import { collection } from './lib/Vector_DB_Client.js'
 import { connection } from './lib/redis_connection.js'
 
-
-
 const imp = [
     !process.env['MONGODB_ATLAS_URI'],
     !process.env['MONGODB_ATLAS_DB_NAME'],

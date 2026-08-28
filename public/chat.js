@@ -55,7 +55,7 @@ async function submitFun() {
     chatArea.innerHTML = chatMessages.map((m) => {
         return `
             <div class="w-90 p-2! ${m.role === 'assistant' ? 'bg-rose-400': "bg-rose-700 text-white"} rounded-xl ${m.role === 'user' && 'self-end'} shrink-0">
-                ${m.content}
+                ${marked.parse(m.content)}
             </div>
         `
     }).join('');
